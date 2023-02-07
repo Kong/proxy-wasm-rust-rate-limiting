@@ -25,7 +25,7 @@ Once the environment is set up with `cargo` in your PATH,
 you can build it with:
 
 ```
-cargo build --target=wasm32-wasi --release
+cargo build --release
 ```
 
 This will produce a .wasm file in `target/wasm32-wasi/release/`.
