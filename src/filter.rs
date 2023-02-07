@@ -405,7 +405,7 @@ impl RateLimitingHttp<'_> {
                     window = cur_window;
                     remaining = cur_remaining;
 
-                    reset = max(1, window - ((now - ts[period]) as i32 / 1000));
+                    reset = max(1, window - (now - ts[period]) as i32);
                 }
 
                 headers.insert(X_RATE_LIMIT_LIMIT[period], limit.to_string());
@@ -415,10 +415,6 @@ impl RateLimitingHttp<'_> {
             headers.insert("RateLimit-Limit", limit.to_string());
             headers.insert("RateLimit-Remaining", remaining.to_string());
             headers.insert("RateLimit-Reset", reset.to_string());
-
-            if stop != None {
-                headers.insert("Retry-After", reset.to_string());
-            }
 
             self.headers = Some(headers);
         }
