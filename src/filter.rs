@@ -209,8 +209,6 @@ impl RootContext for RateLimitingRoot {
                 _context_id: context_id,
                 config: config.clone(),
                 limits: limits,
-                route_id: None,
-                service_id: None,
                 headers: None,
             }))
         } else {
@@ -223,12 +221,10 @@ impl RootContext for RateLimitingRoot {
 // Plugin Context
 // -----------------------------------------------------------------------------
 
-struct RateLimitingHttp<'a> {
+struct RateLimitingHttp {
     _context_id: u32,
     config: Config,
     limits: HashMap<&'static str, i32>,
-    route_id: Option<&'a str>,
-    service_id: Option<&'a str>,
     headers: Option<HashMap<&'static str, String>>,
 }
 
@@ -255,7 +251,7 @@ trait RateLimitingPolicy {
 }
 
 // Local policy implementation:
-impl RateLimitingPolicy for RateLimitingHttp<'_> {
+impl RateLimitingPolicy for RateLimitingHttp {
     fn usage(&self, id: &str, period: &'static str, ts: &TimestampMap) -> Result<(i32, Option<u32>), String> {
         let cache_key = self.get_local_key(id, period, ts[period]);
         match self.get_shared_data(&cache_key) {
@@ -306,9 +302,9 @@ impl RateLimitingPolicy for RateLimitingHttp<'_> {
     }
 }
 
-impl RateLimitingHttp<'_> {
-    fn get_forwarded_ip(&self) -> String {
-        if let Some(addr) = self.get_property(vec!["ngx", "remote_addr"]) {
+impl RateLimitingHttp {
+    fn get_prop(&self, ns: &str, prop: &str) -> String {
+        if let Some(addr) = self.get_property(vec![ns, prop]) {
             match std::str::from_utf8(&addr) {
                 Ok(value) => value.to_string(),
                 Err(_) => "".to_string(),
@@ -336,12 +332,14 @@ impl RateLimitingHttp<'_> {
         }
 
         // "ip" is the fallback:
-        return self.get_forwarded_ip();
+        return self.get_prop("ngx", "remote_addr");
     }
 
     fn get_local_key(&self, id: &str, period: &'static str, date: i64) -> String {
         format!("kong_wasm_rate_limiting_counters/ratelimit:{}:{}:{}:{}:{}",
-            self.route_id.unwrap_or(""), self.service_id.unwrap_or(""), id, date, period)
+            self.get_prop("kong", "route_id"),
+            self.get_prop("kong", "service_id"),
+            id, date, period)
     }
 
     fn get_usages(&mut self, id: &str, ts: &TimestampMap) -> Usages {
@@ -436,8 +434,8 @@ impl RateLimitingHttp<'_> {
     }
 }
 
-impl Context for RateLimitingHttp<'_> {}
-impl HttpContext for RateLimitingHttp<'_> {
+impl Context for RateLimitingHttp {}
+impl HttpContext for RateLimitingHttp {
     fn on_http_request_headers(&mut self, _nheaders: usize, _eof: bool) -> Action {
         let now: DateTime<Utc> = self.get_current_time().into();
 
