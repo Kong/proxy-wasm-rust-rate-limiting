@@ -12,6 +12,14 @@ DEMO_KONG_IMAGE="${DEMO_KONG_IMAGE:-kong/kong:3.2.0.0-ubuntu}"
 
 ################################################################################
 
+if [[ "$1" == "stop" ]]
+then
+    docker stop $DEMO_KONG_CONTAINER
+    docker rm $DEMO_KONG_CONTAINER
+    exit 0
+fi
+
+
 (
     cd ..
     cargo build --target=wasm32-wasi --release || exit 1
