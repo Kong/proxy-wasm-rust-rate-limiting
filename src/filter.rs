@@ -14,18 +14,18 @@ use phf;
 
 #[derive(Deserialize, Clone, Debug)]
 struct Config {
-    #[serde(default = "default_negative_1")]
-    second: i32,
-    #[serde(default = "default_negative_1")]
-    minute: i32,
-    #[serde(default = "default_negative_1")]
-    hour: i32,
-    #[serde(default = "default_negative_1")]
-    day: i32,
-    #[serde(default = "default_negative_1")]
-    month: i32,
-    #[serde(default = "default_negative_1")]
-    year: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    second: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    minute: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hour: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    day: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    month: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    year: Option<i32>,
     #[serde(default = "default_limit_by")]
     limit_by: String,
     #[serde(default = "default_empty")]
@@ -42,10 +42,6 @@ struct Config {
     error_code: u32,
     #[serde(default = "default_msg")]
     error_message: String,
-}
-
-fn default_negative_1() -> i32 {
-    -1
 }
 
 fn default_empty() -> String {
@@ -196,7 +192,7 @@ impl RootContext for RateLimitingRoot {
     fn create_http_context(&self, context_id: u32) -> Option<Box<dyn HttpContext>> {
         info!("create_http_context: configuration: context_id: {} | {:?}", context_id, self.config);
         if let Some(config) = &self.config {
-            let mut limits = HashMap::<&'static str, i32>::new();
+            let mut limits = HashMap::<&'static str, Option<i32>>::new();
 
             limits.insert("second", config.second);
             limits.insert("minute", config.minute);
@@ -224,7 +220,7 @@ impl RootContext for RateLimitingRoot {
 struct RateLimitingHttp {
     _context_id: u32,
     config: Config,
-    limits: HashMap<&'static str, i32>,
+    limits: HashMap<&'static str, Option<i32>>,
     headers: Option<HashMap<&'static str, String>>,
 }
 
@@ -346,30 +342,28 @@ impl RateLimitingHttp {
         let mut usages: Usages = Default::default();
         let mut counters = UsageMap::new();
 
-        for (&period, &limit) in &self.limits {
-            if limit == -1 {
-                continue;
-            }
+        for (period, &limit) in &self.limits {
+            if let Some(limit) = limit {
+                match self.usage(id, period, ts) {
+                    Ok((cur_usage, cas)) => {
+                        // What is the current usage for the configured limit name?
+                        let remaining = limit - cur_usage;
 
-            match self.usage(id, period, ts) {
-                Ok((cur_usage, cas)) => {
-                    // What is the current usage for the configured limit name?
-                    let remaining = limit - cur_usage;
+                        counters.insert(period, Usage {
+                            limit: limit,
+                            remaining: remaining,
+                            usage: cur_usage,
+                            cas: cas,
+                        });
 
-                    counters.insert(period, Usage {
-                        limit: limit,
-                        remaining: remaining,
-                        usage: cur_usage,
-                        cas: cas,
-                    });
-
-                    if remaining <= 0 {
-                        usages.stop = Some(period);
+                        if remaining <= 0 {
+                            usages.stop = Some(period);
+                        }
                     }
-                }
-                Err(err) => {
-                    usages.err = Some(err);
-                    break;
+                    Err(err) => {
+                        usages.err = Some(err);
+                        break;
+                    }
                 }
             }
         }
