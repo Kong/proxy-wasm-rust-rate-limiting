@@ -10,9 +10,7 @@ services:
     paths:
     - /
     strip_path: false
-    plugins:
-    - name: proxy-wasm
-      config:
-        filters:
-        - name: proxy_wasm_rust_rate_limiting
-          config: '{"minute": 3}'
+    filter_chains:
+    - filters:
+      - name: proxy_wasm_rust_rate_limiting
+        config: '{"minute": 3}'
