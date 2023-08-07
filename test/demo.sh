@@ -56,6 +56,7 @@ docker run -d --name "$DEMO_KONG_CONTAINER" \
     -e "KONG_DATABASE=off" \
     -e "KONG_NGINX_WORKER_PROCESSES=1" \
     -e "KONG_DECLARATIVE_CONFIG=/kong/config/demo.yml" \
+    -e "KONG_NGINX_WASM_SHM_KONG_WASM_RATE_LIMITING_COUNTERS=12m" \
     -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
     -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
     -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
