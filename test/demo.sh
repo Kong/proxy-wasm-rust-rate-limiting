@@ -13,19 +13,29 @@ then
     exit 0
 fi
 
+### Build filter ###############################################################
+
 (
     cd ..
     cargo build --target=wasm32-wasi --release || exit 1
 ) || exit 1
 
+### Copy filter to wasm/ #######################################################
+
 mkdir -p wasm
 
+cp -a ../target/wasm32-wasi/release/*.wasm wasm/
+
 script_dir=$(dirname $(realpath $0))
+
+### Start container ############################################################
 
 docker stop $DEMO_KONG_CONTAINER
 docker rm $DEMO_KONG_CONTAINER
 
-# Config trick to access localhost in a local Docker test:
+# Config trick to access localhost in a local Docker test,
+# in case you want to edit your config/demo.yml to target
+# a localhost server rather than mockbin.org:
 #
 # access_localhost="--add-host=host.docker.internal:$(ip -j address | jq -r '[ .[] | select(.ifname | test("^[ew]")) | .addr_info[] | select(.family == "inet") | .local ][0]')"
 access_localhost=""
@@ -49,9 +59,13 @@ docker run -d --name "$DEMO_KONG_CONTAINER" \
     -p 8444:8444 \
      "$DEMO_KONG_IMAGE"
 
+### Show configuration #########################################################
+
 cat config/demo.yml
 
 sleep 5
+
+### Issue requests #############################################################
 
 http :8000/echo
 http :8000/echo
