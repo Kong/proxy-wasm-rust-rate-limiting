@@ -1,0 +1,39 @@
+{
+   "config_schema": {
+      "type": "object",
+      "properties": {
+         "second": { "type": "integer" },
+         "minute": { "type": "integer" },
+         "hour": { "type": "integer" },
+         "day": { "type": "integer" },
+         "month": { "type": "integer" },
+         "year": { "type": "integer" },
+         "limit_by": {
+            "type": "string",
+            "enum": [ "ip", "header", "path" ],
+            "default": "ip"
+         },
+         "header_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_]+$"
+         },
+         "path": {
+            "type": "string",
+            "pattern": "^/[A-Za-z0-9_.~/%:@!$&'()*+,;=-]*$"
+         },
+         "policy": {
+            "type": "string",
+            "enum": ["local"],
+            "default": "local"
+         },
+         "fault_tolerant": {
+            "type": "boolean",
+            "default": "true"
+         },
+         "hide_client_headers": {
+            "type": "boolean",
+            "default": "false"
+         }
+      }
+   }
+}
