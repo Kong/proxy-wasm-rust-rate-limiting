@@ -39,5 +39,5 @@ key-value store enabled in your Kong configuration. One way to
 achieve this is via the following environment variable:
 
 ```sh
-export KONG_NGINX_WASM_SHM_KONG_WASM_RATE_LIMITING_COUNTERS=12m
+export KONG_NGINX_WASM_SHM_KV_KONG_WASM_RATE_LIMITING_COUNTERS=12m
 ```

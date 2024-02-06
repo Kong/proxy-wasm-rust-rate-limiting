@@ -1,9 +1,10 @@
+
 _format_version: "1.1"
 _transform: true
 
 services:
 - name: demo
-  url: http://mockbin.org
+  url: http://httpbin.org
 #  url: http://host.docker.internal:6502/
   routes:
   - name: my-route
@@ -13,4 +14,6 @@ services:
     filter_chains:
     - filters:
       - name: proxy_wasm_rust_rate_limiting
-        config: '{"minute": 3}'
+        config:
+           minute: 3
+
